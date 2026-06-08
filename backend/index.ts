@@ -88,11 +88,14 @@ app.get('/api/search', async (req: Request, res: Response) => {
   const minBpm = req.query.minBpm as string | undefined;
   const maxBpm = req.query.maxBpm as string | undefined;
   const limit = req.query.limit as string | undefined;
+  const index = req.query.index as string | undefined;
 
-  const parsedLimit = Math.min(parseInt(limit || '') || 20, 50);
+  const defaultLimit = parseInt(process.env.CHUNK_SIZE || '30') || 30;
+  const parsedLimit = Math.min(parseInt(limit || '') || defaultLimit, 50);
+  const parsedIndex = parseInt(index || '') || 0;
 
   // Determine if it is a BPM-only search (no text query)
-  const isBpmOnlySearch = !q && !genre && (bpm || (minBpm && maxBpm));
+  const isBpmOnlySearch = !q && (bpm || (minBpm && maxBpm));
 
   if (isBpmOnlySearch) {
     const apiKey = process.env.GETSONGBPM_API_KEY;
@@ -186,7 +189,15 @@ app.get('/api/search', async (req: Request, res: Response) => {
       // Sort by alphabetical order
       mergedResults.sort((a, b) => a.name.localeCompare(b.name));
 
-      return res.json(mergedResults.slice(0, parsedLimit));
+      const slicedResults = mergedResults.slice(parsedIndex, parsedIndex + parsedLimit);
+      const hasMore = (parsedIndex + parsedLimit) < mergedResults.length;
+
+      return res.json({
+        tracks: slicedResults,
+        hasMore,
+        total: mergedResults.length,
+        limit: parsedLimit
+      });
     } catch (error: any) {
       console.error('GetSongBPM API search failed:', error.message);
       return res.status(500).json({ error: 'Erreur lors de la recherche sur GetSongBPM.' });
@@ -197,15 +208,18 @@ app.get('/api/search', async (req: Request, res: Response) => {
   try {
     const searchQuery = q || 'pop';
 
-    console.log(`Searching Deezer for tracks matching: "${searchQuery}"...`);
+    console.log(`Searching Deezer for tracks matching: "${searchQuery}" (index: ${parsedIndex})...`);
     const searchResponse = await axios.get('https://api.deezer.com/search', {
       params: {
         q: searchQuery,
         limit: parsedLimit,
+        index: parsedIndex,
       },
     });
 
     const tracks: DeezerTrack[] = searchResponse.data.data || [];
+    const total = searchResponse.data.total || 0;
+    const hasMore = !!searchResponse.data.next || (parsedIndex + tracks.length < total);
 
     const results: ResultTrack[] = tracks
       .filter((track) => track.preview !== null)
@@ -223,7 +237,12 @@ app.get('/api/search', async (req: Request, res: Response) => {
         };
       });
 
-    res.json(results);
+    res.json({
+      tracks: results,
+      hasMore,
+      total,
+      limit: parsedLimit
+    });
   } catch (error: any) {
     console.error('Search API error:', error.message);
     res.status(500).json({ error: error.message || 'Internal Server Error' });
@@ -271,6 +290,7 @@ app.get('/api/youtube-music/search', async (req: Request, res: Response) => {
     }
 
     const match = results[0];
+
     res.json({
       youtubeId: match.videoId,
       title: match.title,
