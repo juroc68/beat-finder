@@ -85,6 +85,7 @@ app.get('/api/search', async (req: Request, res: Response) => {
   const q = req.query.q as string | undefined;
   const genre = req.query.genre as string | undefined;
   const bpm = req.query.bpm as string | undefined;
+  const margin = req.query.margin as string | undefined;
   const minBpm = req.query.minBpm as string | undefined;
   const maxBpm = req.query.maxBpm as string | undefined;
   const limit = req.query.limit as string | undefined;
@@ -113,7 +114,10 @@ app.get('/api/search', async (req: Request, res: Response) => {
 
       let bpmsToQuery: number[] = [];
       if (targetBpm) {
-        bpmsToQuery = [targetBpm];
+        const parsedMargin = Math.max(0, Math.min(5, parseInt(margin || '0') || 0));
+        for (let b = targetBpm; b <= targetBpm + parsedMargin; b++) {
+          bpmsToQuery.push(b);
+        }
       } else if (minB !== null && maxB !== null) {
         // Limit range queries to 5 integer BPM values to avoid hitting rate limits (3000 req/hr)
         const start = Math.max(40, minB);
