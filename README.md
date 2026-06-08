@@ -2,6 +2,8 @@
 
 BeatFinder est une application permettant de rechercher et de lire des morceaux sur Deezer, GetSongBPM et YouTube Music en fonction de leur tempo (BPM - Beats Per Minute).
 
+![Aperçu de BeatFinder](assets/beatfinder-screenshot.png)
+
 L'application prend en charge la recherche d'un BPM exact avec la possibilité d'ajouter une marge supérieure de +0 à +5 BPM (ex: de 120 à 125 BPM).
 
 ## Architecture du Projet
