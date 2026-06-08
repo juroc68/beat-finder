@@ -257,6 +257,15 @@ app.get('/api/audio-proxy', async (req: Request, res: Response) => {
       return res.status(400).send('Parameter "url" is required');
     }
 
+    // SSRF prevention: validate that the URL points to Deezer's domains
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname;
+    const isAllowed = hostname.endsWith('.deezer.com') || hostname.endsWith('.dzcdn.net');
+    
+    if (!isAllowed) {
+      return res.status(400).send('URL not allowed (must be from Deezer)');
+    }
+
     console.log(`Proxying audio download from: ${url}`);
     const response = await axios.get(url, { responseType: 'arraybuffer' });
 
