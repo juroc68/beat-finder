@@ -68,6 +68,36 @@ L'application web démarrera sur `http://localhost:5173`. Ouvrez cette adresse d
 
 ---
 
+## Configuration et Lancement de l'Application Mobile
+
+L'application Expo reprend la recherche par BPM, la recherche textuelle, la pagination, les liens Deezer/YouTube, le thème sombre et un métronome visuel avec impulsion tactile sur Android.
+
+### 1. Configurer l'adresse du backend
+
+Dans le dossier `mobile`, créez un fichier `.env.local` à partir de `.env.example` :
+
+```env
+EXPO_PUBLIC_API_URL=http://192.168.1.20:5000
+```
+
+- **Téléphone physique** : utilisez l'adresse IP locale de l'ordinateur. Le téléphone et l'ordinateur doivent être sur le même réseau Wi-Fi.
+- **Émulateur Android** : utilisez `http://10.0.2.2:5000`.
+- **Simulateur iOS** : utilisez `http://localhost:5000`.
+
+### 2. Lancer Expo
+
+```bash
+cd mobile
+pnpm install
+pnpm start
+```
+
+Scannez ensuite le QR code avec Expo Go, ou utilisez `pnpm android` / `pnpm ios` avec un émulateur installé.
+
+> La recherche textuelle mobile affiche les morceaux Deezer sans calcul local du BPM. La recherche sans texte utilise les BPM fournis par GetSongBPM.
+
+---
+
 ## Lancement avec Docker Compose
 
 L'application peut être entièrement lancée avec Docker et Docker Compose. Dans cette configuration, le frontend est construit pour la production et servi par un serveur Nginx qui fait également office de reverse proxy pour rediriger les requêtes `/api/*` vers le conteneur backend.
