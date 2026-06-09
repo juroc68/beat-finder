@@ -435,8 +435,8 @@ export default function App() {
                 <div className="slider-group">
                   <input
                     type="range"
-                    min="50"
-                    max="200"
+                    min="40"
+                    max="220"
                     value={exactBpm}
                     onChange={(e) => setExactBpm(parseInt(e.target.value))}
                   />
@@ -543,12 +543,13 @@ export default function App() {
       )}
 
       {/* Floating Bottom-Left Metronome */}
-      <Metronome
-        showMetronome={showMetronome}
-        onClose={() => setShowMetronome(false)}
-        exactBpm={exactBpm}
-        onAdjustBpm={adjustMetronomeBpm}
-      />
+      {showMetronome && (
+        <Metronome
+          onClose={() => setShowMetronome(false)}
+          exactBpm={exactBpm}
+          onAdjustBpm={adjustMetronomeBpm}
+        />
+      )}
 
       {/* Footer Attribution */}
       <footer className="app-footer">

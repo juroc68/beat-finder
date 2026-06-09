@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 interface MetronomeProps {
-  showMetronome: boolean;
   onClose: () => void;
   exactBpm: number;
   onAdjustBpm: (amount: number) => void;
 }
 
 export const Metronome: React.FC<MetronomeProps> = ({
-  showMetronome,
   onClose,
   exactBpm,
   onAdjustBpm,
@@ -16,9 +14,9 @@ export const Metronome: React.FC<MetronomeProps> = ({
   const [metronomePlaying, setMetronomePlaying] = useState(false);
   const [isBeatActive, setIsBeatActive] = useState(false);
   const [beatTick, setBeatTick] = useState(0);
+  const [visualBeatDuration, setVisualBeatDuration] = useState(60 / exactBpm);
   const metronomeAudioCtxRef = useRef<AudioContext | null>(null);
 
-  const beatDuration = 60 / exactBpm;
   const weightPercent = Math.max(0, Math.min(1, (exactBpm - 40) / 180));
   const weightTop = 10 + weightPercent * 35;
   const needleClass = !metronomePlaying
@@ -30,62 +28,113 @@ export const Metronome: React.FC<MetronomeProps> = ({
     bpmRef.current = exactBpm;
   }, [exactBpm]);
 
-  // Metronome Audio Scheduler Loop
   useEffect(() => {
-    if (!metronomePlaying) {
-      return;
-    }
+    if (!metronomePlaying) return;
 
+    const audioCtx = metronomeAudioCtxRef.current;
+    if (!audioCtx || audioCtx.state !== 'running') return;
+
+    let nextNoteTime = audioCtx.currentTime + 0.05;
+    let schedulerTimerId: number | undefined;
+    const visualTimerIds = new Set<number>();
+    const scheduledOscillators = new Set<OscillatorNode>();
+
+    const scheduleVisualTimer = (callback: () => void, delayMs: number) => {
+      const timerId = window.setTimeout(() => {
+        visualTimerIds.delete(timerId);
+        callback();
+      }, delayMs);
+      visualTimerIds.add(timerId);
+    };
+
+    const scheduleBeat = (timeToPlay: number, beatInterval: number) => {
+      const oscillator = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      scheduledOscillators.add(oscillator);
+
+      oscillator.connect(gain);
+      gain.connect(audioCtx.destination);
+      oscillator.frequency.setValueAtTime(1000, timeToPlay);
+      gain.gain.setValueAtTime(0.35, timeToPlay);
+      gain.gain.exponentialRampToValueAtTime(0.001, timeToPlay + 0.04);
+      oscillator.start(timeToPlay);
+      oscillator.stop(timeToPlay + 0.05);
+      oscillator.onended = () => scheduledOscillators.delete(oscillator);
+
+      const delayMs = Math.max(0, (timeToPlay - audioCtx.currentTime) * 1000);
+      scheduleVisualTimer(() => {
+        setVisualBeatDuration(beatInterval);
+        setIsBeatActive(true);
+        setBeatTick((previousTick) => previousTick + 1);
+        scheduleVisualTimer(() => setIsBeatActive(false), 70);
+      }, delayMs);
+    };
+
+    const scheduler = () => {
+      const currentTime = audioCtx.currentTime;
+      const currentBeatInterval = 60 / bpmRef.current;
+
+      // A throttled background tab must skip missed beats instead of replaying them in a burst.
+      if (nextNoteTime < currentTime) {
+        const missedBeats = Math.floor((currentTime - nextNoteTime) / currentBeatInterval) + 1;
+        nextNoteTime += missedBeats * currentBeatInterval;
+      }
+
+      while (nextNoteTime < currentTime + 0.1) {
+        const beatInterval = 60 / bpmRef.current;
+        scheduleBeat(nextNoteTime, beatInterval);
+        nextNoteTime += beatInterval;
+      }
+
+      schedulerTimerId = window.setTimeout(scheduler, 25);
+    };
+
+    schedulerTimerId = window.setTimeout(scheduler, 0);
+
+    return () => {
+      if (schedulerTimerId !== undefined) {
+        window.clearTimeout(schedulerTimerId);
+      }
+      visualTimerIds.forEach((timerId) => window.clearTimeout(timerId));
+      scheduledOscillators.forEach((oscillator) => {
+        oscillator.onended = null;
+        try {
+          oscillator.stop();
+        } catch {
+          // The oscillator may already have finished naturally.
+        }
+      });
+    };
+  }, [metronomePlaying]);
+
+  useEffect(() => () => {
+    const audioCtx = metronomeAudioCtxRef.current;
+    if (audioCtx && audioCtx.state !== 'closed') {
+      void audioCtx.close();
+    }
+  }, []);
+
+  const startMetronome = async () => {
     let audioCtx = metronomeAudioCtxRef.current;
-    if (!audioCtx) {
+    if (!audioCtx || audioCtx.state === 'closed') {
       const AudioCtxClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       audioCtx = new AudioCtxClass();
       metronomeAudioCtxRef.current = audioCtx;
     }
 
     if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
+      await audioCtx.resume();
     }
 
-    let nextNoteTime = audioCtx.currentTime + 0.05;
-    let timerId: ReturnType<typeof setTimeout> | undefined = undefined;
+    setVisualBeatDuration(60 / bpmRef.current);
+    setMetronomePlaying(true);
+  };
 
-    const scheduler = () => {
-      while (nextNoteTime < audioCtx!.currentTime + 0.1) {
-        const timeToPlay = nextNoteTime;
-        
-        // Play click sound using oscillator
-        const osc = audioCtx!.createOscillator();
-        const gain = audioCtx!.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx!.destination);
-        osc.frequency.setValueAtTime(1000, timeToPlay); // 1000 Hz beep
-        gain.gain.setValueAtTime(0.35, timeToPlay);
-        gain.gain.exponentialRampToValueAtTime(0.001, timeToPlay + 0.04);
-        osc.start(timeToPlay);
-        osc.stop(timeToPlay + 0.05);
-
-        // Schedule visual flash and pendulum tick
-        const delayMs = Math.max(0, (timeToPlay - audioCtx!.currentTime) * 1000);
-        setTimeout(() => {
-          setIsBeatActive(true);
-          setBeatTick((prev) => prev + 1);
-          setTimeout(() => setIsBeatActive(false), 70);
-        }, delayMs);
-
-        nextNoteTime += 60.0 / bpmRef.current;
-      }
-      timerId = setTimeout(scheduler, 25);
-    };
-
-    timerId = setTimeout(scheduler, 0);
-
-    return () => {
-      clearTimeout(timerId);
-    };
-  }, [metronomePlaying]);
-
-  if (!showMetronome) return null;
+  const stopMetronome = () => {
+    setMetronomePlaying(false);
+    setIsBeatActive(false);
+    setBeatTick(0);
+  };
 
   return (
     <div className="bottom-left-metronome">
@@ -94,9 +143,7 @@ export const Metronome: React.FC<MetronomeProps> = ({
         className="widget-close-btn"
         onClick={() => {
           onClose();
-          setMetronomePlaying(false);
-          setIsBeatActive(false);
-          setBeatTick(0);
+          stopMetronome();
         }}
         title="Fermer le métronome"
       >
@@ -111,7 +158,7 @@ export const Metronome: React.FC<MetronomeProps> = ({
         <div className={`metronome-ripple ${isBeatActive ? 'active' : ''}`}></div>
         <div 
           className={`metronome-needle ${needleClass}`}
-          style={{ '--beat-duration': `${beatDuration}s` } as React.CSSProperties}
+          style={{ '--beat-duration': `${visualBeatDuration}s` } as React.CSSProperties}
         >
           <div className="metronome-weight" style={{ top: `${weightTop}px` }}></div>
         </div>
@@ -152,11 +199,10 @@ export const Metronome: React.FC<MetronomeProps> = ({
           type="button"
           className={`metronome-toggle-btn ${metronomePlaying ? 'playing' : ''}`}
           onClick={() => {
-            const nextVal = !metronomePlaying;
-            setMetronomePlaying(nextVal);
-            if (!nextVal) {
-              setIsBeatActive(false);
-              setBeatTick(0);
+            if (metronomePlaying) {
+              stopMetronome();
+            } else {
+              void startMetronome();
             }
           }}
           title={metronomePlaying ? 'Arrêter' : 'Démarrer'}
