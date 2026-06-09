@@ -68,6 +68,42 @@ L'application web démarrera sur `http://localhost:5173`. Ouvrez cette adresse d
 
 ---
 
+## Lancement avec Docker Compose
+
+L'application peut être entièrement lancée avec Docker et Docker Compose. Dans cette configuration, le frontend est construit pour la production et servi par un serveur Nginx qui fait également office de reverse proxy pour rediriger les requêtes `/api/*` vers le conteneur backend.
+
+### Prérequis
+
+- Docker et Docker Compose installés sur votre machine.
+- Le fichier `.env` configuré dans le dossier `backend`.
+
+### Instructions de lancement
+
+1. Démarrez les conteneurs :
+   ```bash
+   docker compose up --build -d
+   ```
+2. Ouvrez votre navigateur et accédez à l'application sur `http://localhost:8080`.
+3. Pour arrêter les services :
+   ```bash
+   docker compose down
+   ```
+
+---
+
+## Sécurité et Limitation de Débit (Rate Limiting)
+
+Pour protéger le backend et éviter le dépassement de quota des APIs tierces (notamment GetSongBPM), un système de limitation de débit est configuré sur le serveur :
+
+- **Limiteur API global** : 1 000 requêtes maximum toutes les 15 minutes par adresse IP pour l'ensemble des routes `/api/*`.
+- **Recherche BPM** : 15 requêtes maximum par minute, afin de protéger le quota GetSongBPM.
+- **Recherche Deezer et proxy audio** : 120 requêtes maximum par minute et par route, pour permettre l'enrichissement progressif des résultats.
+- **Recherche YouTube** : 30 requêtes maximum par minute.
+
+Le frontend limite également les enrichissements automatiques à quatre traitements simultanés afin d'éviter un pic de requêtes lors de l'affichage d'une page complète.
+
+---
+
 ## Fonctionnalités Clés de l'application
 
 - **Recherche par tempo exact avec marge** : Saisissez un tempo cible et choisissez une marge supérieure (+0 à +5 BPM) pour obtenir les morceaux correspondants depuis la base de données de GetSongBPM.
