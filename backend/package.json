@@ -2,10 +2,11 @@
   "name": "beat-finder-backend",
   "version": "1.0.0",
   "type": "module",
-  "main": "index.ts",
+  "main": "src/server.ts",
   "scripts": {
-    "start": "tsx index.ts",
-    "dev": "tsx watch index.ts"
+    "start": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "axios": "^1.7.2",
