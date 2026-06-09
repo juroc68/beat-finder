@@ -80,11 +80,14 @@ L'application peut être entièrement lancée avec Docker et Docker Compose. Dan
 ### Instructions de lancement
 
 1. Démarrez les conteneurs :
+
    ```bash
    docker compose up --build -d
    ```
+
 2. Ouvrez votre navigateur et accédez à l'application sur `http://localhost:8080`.
 3. Pour arrêter les services :
+
    ```bash
    docker compose down
    ```
