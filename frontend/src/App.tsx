@@ -6,7 +6,7 @@ import { TrackCard } from './components/TrackCard';
 import { BottomPlayer } from './components/BottomPlayer';
 import { Metronome } from './components/Metronome';
 
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL !== undefined ? import.meta.env.VITE_BACKEND_URL : 'http://localhost:5000';
 
 export default function App() {
   // Search parameters states
