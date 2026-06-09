@@ -96,14 +96,19 @@ L'application peut être entièrement lancée avec Docker et Docker Compose. Dan
 
 ## Sécurité et Limitation de Débit (Rate Limiting)
 
-Pour protéger le backend et éviter le dépassement de quota des APIs tierces (notamment GetSongBPM), un système de limitation de débit est configuré sur le serveur :
+Pour protéger le backend et les APIs tierces, chaque famille de routes possède son propre quota. Les valeurs se configurent dans `backend/.env` :
 
-- **Limiteur API global** : 1 000 requêtes maximum toutes les 15 minutes par adresse IP pour l'ensemble des routes `/api/*`.
-- **Recherche BPM** : 15 requêtes maximum par minute, afin de protéger le quota GetSongBPM.
-- **Recherche Deezer et proxy audio** : 120 requêtes maximum par minute et par route, pour permettre l'enrichissement progressif des résultats.
-- **Recherche YouTube** : 30 requêtes maximum par minute.
+| Variable | Valeur par défaut | Rôle |
+| --- | ---: | --- |
+| `API_RATE_LIMIT_WINDOW_MS` | `900000` | Fenêtre du limiteur global, soit 15 minutes |
+| `API_RATE_LIMIT_MAX` | `5000` | Filet de sécurité global sur `/api/*` |
+| `PROVIDER_RATE_LIMIT_WINDOW_MS` | `60000` | Fenêtre commune aux APIs externes, soit 1 minute |
+| `DEEZER_SEARCH_RATE_LIMIT_MAX` | `120` | Recherches textuelles Deezer |
+| `BPM_SEARCH_RATE_LIMIT_MAX` | `15` | Recherches GetSongBPM |
+| `AUDIO_PROXY_RATE_LIMIT_MAX` | `120` | Téléchargements d'extraits Deezer pour l'analyse BPM |
+| `YOUTUBE_SEARCH_RATE_LIMIT_MAX` | `30` | Recherches YouTube |
 
-Le frontend limite également les enrichissements automatiques à quatre traitements simultanés afin d'éviter un pic de requêtes lors de l'affichage d'une page complète.
+Avec `CHUNK_SIZE=30`, le quota par défaut du proxy audio permet d'analyser quatre pages complètes par minute. Si `AUDIO_PROXY_RATE_LIMIT_MAX` est absent, le serveur choisit automatiquement la valeur la plus élevée entre `120` et `CHUNK_SIZE × 4`.
 
 ---
 

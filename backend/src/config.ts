@@ -5,10 +5,28 @@ const parsePositiveInteger = (value: string | undefined, fallback: number): numb
   return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : fallback;
 };
 
+const chunkSize = parsePositiveInteger(process.env.CHUNK_SIZE, 30);
+
 export const config = {
   port: parsePositiveInteger(process.env.PORT, 5000),
-  chunkSize: parsePositiveInteger(process.env.CHUNK_SIZE, 30),
-  getSongBpmApiKey: process.env.GETSONGBPM_API_KEY
+  chunkSize,
+  getSongBpmApiKey: process.env.GETSONGBPM_API_KEY,
+  rateLimits: {
+    api: {
+      windowMs: parsePositiveInteger(process.env.API_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
+      max: parsePositiveInteger(process.env.API_RATE_LIMIT_MAX, 5000)
+    },
+    providers: {
+      windowMs: parsePositiveInteger(process.env.PROVIDER_RATE_LIMIT_WINDOW_MS, 60 * 1000),
+      deezerSearchMax: parsePositiveInteger(process.env.DEEZER_SEARCH_RATE_LIMIT_MAX, 120),
+      bpmSearchMax: parsePositiveInteger(process.env.BPM_SEARCH_RATE_LIMIT_MAX, 15),
+      audioProxyMax: parsePositiveInteger(
+        process.env.AUDIO_PROXY_RATE_LIMIT_MAX,
+        Math.max(chunkSize * 4, 120)
+      ),
+      youtubeSearchMax: parsePositiveInteger(process.env.YOUTUBE_SEARCH_RATE_LIMIT_MAX, 30)
+    }
+  }
 };
 
 export const hasGetSongBpmApiKey = (): boolean =>
