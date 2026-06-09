@@ -3,14 +3,49 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import axios from 'axios';
 import yts from 'yt-search';
+import { rateLimit } from 'express-rate-limit';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Enable trusting reverse proxies (Nginx, Cloudflare, etc.) to get correct client IPs
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
+
+// General rate limiter for all API endpoints
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // Limit each IP to 100 requests per window
+  standardHeaders: 'draft-7', // Use standard RateLimit headers
+  legacyHeaders: false, // Disable X-RateLimit headers
+  message: {
+    error: 'Trop de requetes depuis cette adresse IP, veuillez reessayer apres 15 minutes.'
+  }
+});
+
+// Stricter rate limiter for search and audio proxy endpoints to protect external API keys
+const searchLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  limit: 15, // Limit each IP to 15 searches/proxies per minute
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    error: 'Trop de requetes de recherche rapides. Veuillez ralentir et reessayer dans une minute.'
+  }
+});
+
+// Apply the general rate limiter to all API routes
+app.use('/api/', apiLimiter);
+
+// Apply the stricter search limiter to specific endpoints
+app.use('/api/search', searchLimiter);
+app.use('/api/youtube-music/search', searchLimiter);
+app.use('/api/audio-proxy', searchLimiter);
+
 
 interface GsbSong {
   song_id?: string;
