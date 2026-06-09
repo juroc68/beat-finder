@@ -101,14 +101,14 @@ Pour protéger le backend et les APIs tierces, chaque famille de routes possède
 | Variable | Valeur par défaut | Rôle |
 | --- | ---: | --- |
 | `API_RATE_LIMIT_WINDOW_MS` | `900000` | Fenêtre du limiteur global, soit 15 minutes |
-| `API_RATE_LIMIT_MAX` | `5000` | Filet de sécurité global sur `/api/*` |
+| `API_RATE_LIMIT_MAX` | `100000` | Filet de sécurité global sur `/api/*` |
 | `PROVIDER_RATE_LIMIT_WINDOW_MS` | `60000` | Fenêtre commune aux APIs externes, soit 1 minute |
-| `DEEZER_SEARCH_RATE_LIMIT_MAX` | `120` | Recherches textuelles Deezer |
-| `BPM_SEARCH_RATE_LIMIT_MAX` | `15` | Recherches GetSongBPM |
-| `AUDIO_PROXY_RATE_LIMIT_MAX` | `120` | Téléchargements d'extraits Deezer pour l'analyse BPM |
-| `YOUTUBE_SEARCH_RATE_LIMIT_MAX` | `30` | Recherches YouTube |
+| `DEEZER_SEARCH_RATE_LIMIT_MAX` | `2000` | Recherches textuelles Deezer |
+| `BPM_SEARCH_RATE_LIMIT_MAX` | `30` | Recherches GetSongBPM |
+| `AUDIO_PROXY_RATE_LIMIT_MAX` | `2000` | Téléchargements d'extraits Deezer pour l'analyse BPM |
+| `YOUTUBE_SEARCH_RATE_LIMIT_MAX` | `300` | Recherches YouTube |
 
-Avec `CHUNK_SIZE=30`, le quota par défaut du proxy audio permet d'analyser quatre pages complètes par minute. Si `AUDIO_PROXY_RATE_LIMIT_MAX` est absent, le serveur choisit automatiquement la valeur la plus élevée entre `120` et `CHUNK_SIZE × 4`.
+Ces valeurs sont volontairement larges pour le développement local. Avant une exposition publique, réduisez-les selon les quotas réels de vos fournisseurs. Si `AUDIO_PROXY_RATE_LIMIT_MAX` est absent, le serveur choisit automatiquement la valeur la plus élevée entre `2000` et `CHUNK_SIZE × 10`.
 
 ---
 
