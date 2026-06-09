@@ -7,8 +7,13 @@ import { BottomPlayer } from './components/BottomPlayer';
 import { Metronome } from './components/Metronome';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL !== undefined ? import.meta.env.VITE_BACKEND_URL : 'http://localhost:5000';
+type Theme = 'light' | 'dark';
 
 export default function App() {
+  const [theme, setTheme] = useState<Theme>(() =>
+    document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
+  );
+
   // Search parameters states
   const [query, setQuery] = useState('');
   const [exactBpm, setExactBpm] = useState(120);
@@ -34,6 +39,12 @@ export default function App() {
   const [pageSize, setPageSize] = useState(30);
   const [totalTracksCount, setTotalTracksCount] = useState<number | null>(null);
   const observerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem('beatfinder-theme', theme);
+  }, [theme]);
 
   // Helper: Query Deezer for GetSongBPM songs to obtain albumArt and deezerUrl
   const fetchDeezerMetadata = useCallback(async (track: Track) => {
@@ -335,19 +346,40 @@ export default function App() {
           </div>
         </div>
         
-        {/* Metronome toggle button on the right side of the header */}
-        <button
-          type="button"
-          className={`header-metronome-toggle ${showMetronome ? 'active' : ''}`}
-          title="Afficher/Masquer le Métronome"
-          onClick={() => setShowMetronome(!showMetronome)}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2L2 22h20L12 2z" />
-            <path d="M12 18L9 10" />
-            <circle cx="12" cy="18" r="1" fill="currentColor" />
-          </svg>
-        </button>
+        <div className="header-actions">
+          <button
+            type="button"
+            className="header-theme-toggle"
+            aria-label={theme === 'dark' ? 'Activer le mode clair' : 'Activer le mode sombre'}
+            title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+            onClick={() => setTheme((currentTheme) => currentTheme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? (
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" />
+              </svg>
+            ) : (
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
+
+          <button
+            type="button"
+            className={`header-metronome-toggle ${showMetronome ? 'active' : ''}`}
+            aria-pressed={showMetronome}
+            title="Afficher/Masquer le Métronome"
+            onClick={() => setShowMetronome(!showMetronome)}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2L2 22h20L12 2z" />
+              <path d="M12 18L9 10" />
+              <circle cx="12" cy="18" r="1" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       {/* Main Search Panel */}
@@ -553,7 +585,7 @@ export default function App() {
 
       {/* Footer Attribution */}
       <footer className="app-footer">
-        <p>Données de tempo fournies par <a href="https://getsongbpm.com" target="_blank" rel="noopener noreferrer">GetSongBPM</a>. Écoute complète résolue via YouTube Music.</p>
+        <p>Données de tempo fournies par <a href="https://getsongbpm.com" target="_blank" rel="noopener noreferrer">GetSongBPM</a>.</p>
       </footer>
     </div>
   );

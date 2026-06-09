@@ -115,19 +115,28 @@ export const Metronome: React.FC<MetronomeProps> = ({
   }, []);
 
   const startMetronome = async () => {
-    let audioCtx = metronomeAudioCtxRef.current;
-    if (!audioCtx || audioCtx.state === 'closed') {
-      const AudioCtxClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      audioCtx = new AudioCtxClass();
-      metronomeAudioCtxRef.current = audioCtx;
-    }
+    try {
+      let audioCtx = metronomeAudioCtxRef.current;
+      if (!audioCtx || audioCtx.state === 'closed') {
+        const AudioCtxClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        audioCtx = new AudioCtxClass();
+        metronomeAudioCtxRef.current = audioCtx;
+      }
 
-    if (audioCtx.state === 'suspended') {
-      await audioCtx.resume();
-    }
+      if (audioCtx.state !== 'running') {
+        await audioCtx.resume();
+      }
 
-    setVisualBeatDuration(60 / bpmRef.current);
-    setMetronomePlaying(true);
+      if (audioCtx.state !== 'running') {
+        throw new Error(`Audio context is ${audioCtx.state}`);
+      }
+
+      setVisualBeatDuration(60 / bpmRef.current);
+      setMetronomePlaying(true);
+    } catch (error) {
+      console.warn('Unable to start the metronome audio context.', error);
+      setMetronomePlaying(false);
+    }
   };
 
   const stopMetronome = () => {

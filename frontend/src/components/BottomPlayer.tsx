@@ -41,7 +41,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
             }}
           />
         ) : (
-          <div className="player-art" style={{ background: '#e5e5ea', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="player-art" style={{ background: 'var(--subtle-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)">
               <path d="M9 18V5l12-2v13M9 15c-1.5 0-3 1.5-3 3s1.5 3 3 3 3-1.5 3-3V9" strokeWidth="2" strokeLinecap="round"/>
             </svg>

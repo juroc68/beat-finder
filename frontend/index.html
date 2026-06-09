@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      const savedTheme = localStorage.getItem('beatfinder-theme');
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = savedTheme || systemTheme;
+    </script>
     <title>BeatFinder - Recherche et Filtre de Musique par BPM</title>
     <meta name="description" content="Découvrez et recherchez des morceaux sur Spotify et YouTube Music en fonction de leur tempo (BPM) exact ou d'une plage de BPM." />
   </head>
